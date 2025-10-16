@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify, render_template_string
 import numpy as np
-from tensorflow.keras.preprocessing.sequence import pad_sequences
-from tensorflow.keras.models import load_model
+# TensorFlow/Keras imports are heavy; import them lazily inside functions (get_model/predict)
 import json
 from pathlib import Path
 from datetime import datetime
@@ -154,6 +153,12 @@ HTML = '''
             try{
               const scoreEl = document.createElement('span'); scoreEl.style.fontWeight = 600; scoreEl.style.marginLeft = '8px'; scoreEl.textContent = (score*100).toFixed(0) + '%';
               userMeta.appendChild(scoreEl);
+              // show star rating if provided
+              if(j.rating){
+                const stars = '⭐'.repeat(Math.max(1, Math.min(5, j.rating)));
+                const rEl = document.createElement('span'); rEl.style.marginLeft = '8px'; rEl.textContent = stars + ' ' + j.rating + '/5';
+                userMeta.appendChild(rEl);
+              }
             }catch(e){ }
 
             const userConf = document.createElement('div'); userConf.className='confidence';
@@ -188,7 +193,12 @@ def get_model():
     if _model is None:
         if not MODEL_PATH.exists():
             raise RuntimeError('Model file not found. Run hhe.py to train and save the model as sentiment_model.h5')
-        _model = load_model(str(MODEL_PATH))
+    # lazy import to avoid importing TensorFlow at module import time
+    try:
+      from tensorflow.keras.models import load_model
+    except Exception:
+      from keras.models import load_model
+    _model = load_model(str(MODEL_PATH))
     return _model
 
 
@@ -386,6 +396,10 @@ def predict():
       seq.append(mapped)
 
   # pad and predict
+  try:
+    from tensorflow.keras.preprocessing.sequence import pad_sequences
+  except Exception:
+    from keras.preprocessing.sequence import pad_sequences
   padded = pad_sequences([seq], maxlen=MAXLEN)
   model = get_model()
   score = float(model.predict(padded)[0][0])
@@ -445,13 +459,18 @@ def predict():
   # server-side logging of predictions for dashboard
   try:
     logp = Path(__file__).parent / 'predictions.log'
-    entry = {'time': datetime.utcnow().isoformat(), 'text': text, 'score': score, 'sentiment': sentiment, 'category': category}
+    # map score (0..1) to a 1-5 product rating (simple linear mapping)
+    rating = int(round(score * 4.0)) + 1
+    if rating < 1: rating = 1
+    if rating > 5: rating = 5
+
+    entry = {'time': datetime.utcnow().isoformat(), 'text': text, 'score': score, 'sentiment': sentiment, 'category': category, 'rating': rating}
     with logp.open('a', encoding='utf-8') as f:
       f.write(json.dumps(entry) + '\n')
   except Exception:
     pass
 
-  return jsonify({'sentiment': sentiment, 'score': score, 'category': category, 'color': color})
+  return jsonify({'sentiment': sentiment, 'score': score, 'category': category, 'color': color, 'rating': rating})
 
 
 if __name__ == '__main__':
