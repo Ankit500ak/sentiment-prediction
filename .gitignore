@@ -1,0 +1,75 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.coverage
+.cache
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Logs and local files
+*.log
+predictions.log
+history.json
+
+# Saved models / large artifacts
+sentiment_model.h5
+word_index.json
+threshold_eval.json
+*.h5
+*.ckpt
+*.npz
+*.npy
+models/
+data/
+
+# Flask instance folder
+instance/
+*.sqlite3
+
+# Environment / secrets
+.env
+.env.*
+
+# Node
+node_modules/
+
+# Misc
+coverage/
+
+# Optional: exclude user-specific files
+*.local
+
+# End of .gitignore
